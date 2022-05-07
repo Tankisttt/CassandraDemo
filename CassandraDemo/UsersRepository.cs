@@ -1,18 +1,15 @@
 ﻿using Cassandra;
+using ISession = Cassandra.ISession;
 
 namespace CassandraDemo;
 
 public class UsersRepository
 {
-    private readonly Cassandra.ISession _session;
+    private readonly ISession _session;
 
-    public UsersRepository()
+    public UsersRepository(ISession session)
     {
-        var cluster = Cluster.Builder()
-            .AddContactPoint("127.0.0.1")
-            .WithPort(9042)
-            .Build();
-        _session = cluster.Connect("users");
+        _session = session;
     }
 
     public async Task<IEnumerable<User>> GetUsers()
@@ -22,7 +19,7 @@ public class UsersRepository
 
         return usersFromDb.Select(userRow => new User
             {
-                Id = int.Parse(userRow["id"].ToString()!),
+                Id = Guid.Parse(userRow["id"].ToString()!),
                 Email = userRow["email"].ToString()!,
                 FirstName = userRow["firstname"].ToString()!,
                 LastName = userRow["lastname"].ToString()!,
@@ -40,7 +37,17 @@ public class UsersRepository
         await _session.ExecuteAsync(statement);
     }
 
-    public async Task DeleteUserById(long userId)
+    public async Task BulkInsert(IEnumerable<User> users)
+    {
+        var batchStmt = new BatchStatement();
+
+        foreach (var user in users)
+            batchStmt.Add(await GetInsertCqlStatement(user));
+        
+        await _session.ExecuteAsync(batchStmt);
+    }
+
+    public async Task DeleteUserById(Guid userId)
     {
         var statement = new SimpleStatement($"DELETE FROM users WHERE id = {userId}");
         await _session.ExecuteAsync(statement);
@@ -48,10 +55,17 @@ public class UsersRepository
 
     public async Task CreateUser(User user)
     {
+        var insertCqlStatement = await GetInsertCqlStatement(user);
+        await _session.ExecuteAsync(insertCqlStatement);
+    }
+
+    public async Task DeleteAllUsers() => await _session.ExecuteAsync(new SimpleStatement("TRUNCATE users"));
+
+    private async Task<BoundStatement> GetInsertCqlStatement(User user)
+    {
         const string cqlQuery =
             "INSERT INTO users.users (id, email, firstname, lastname, age, country) VALUES(?,?,?,?,?,?)";
         var preparedStmt = await _session.PrepareAsync(cqlQuery);
-        var statement = preparedStmt.Bind(user.Id, user.Email, user.FirstName, user.LastName, user.Age, user.Country);
-        await _session.ExecuteAsync(statement);
+        return preparedStmt.Bind(user.Id, user.Email, user.FirstName, user.LastName, user.Age, user.Country);
     }
 }
