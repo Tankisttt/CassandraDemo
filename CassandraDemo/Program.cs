@@ -1,6 +1,5 @@
 using Cassandra;
 using CassandraDemo;
-using ISession = Cassandra.ISession;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -11,11 +10,7 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-builder.Services.AddSingleton<ISession>(c => Cluster.Builder()
-    .AddContactPoint("127.0.0.1")
-    .WithPort(9042)
-    .Build()
-    .Connect("users"));
+await RegisterCassandraAndCreateUsersTable(builder.Services);
 
 builder.Services.AddSingleton<UsersRepository>();
 
@@ -35,3 +30,21 @@ app.UseAuthorization();
 app.MapControllers();
 
 app.Run();
+
+static async Task RegisterCassandraAndCreateUsersTable(IServiceCollection serviceCollection)
+{
+    var cluster = Cluster.Builder()
+        .AddContactPoint("127.0.0.1")
+        .WithPort(9042)
+        .Build();
+
+    using var defaultSession = await cluster.ConnectAsync();
+    await defaultSession.ExecuteAsync(new SimpleStatement(
+        "CREATE KEYSPACE IF NOT EXISTS users WITH REPLICATION = { 'class' : 'SimpleStrategy', 'replication_factor' : '1' };"));
+    var usersSession = defaultSession.Cluster.Connect("users");
+
+    usersSession.Execute(
+        "CREATE TABLE IF NOT EXISTS users.users (id uuid PRIMARY KEY,email text,firstname text,lastname text,age int,country text)");
+
+    serviceCollection.AddSingleton(usersSession);
+}
