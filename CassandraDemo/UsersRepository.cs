@@ -14,7 +14,7 @@ public class UsersRepository
 
     public async Task<IEnumerable<User>> GetUsers()
     {
-        const string cqlQuery = "SELECT * FROM users.users";
+        const string cqlQuery = "SELECT * FROM users";
         var usersFromDb = await _session.ExecuteAsync(new SimpleStatement(cqlQuery));
 
         return usersFromDb.Select(userRow => new User
@@ -64,7 +64,7 @@ public class UsersRepository
     private async Task<BoundStatement> GetInsertCqlStatement(User user)
     {
         const string cqlQuery =
-            "INSERT INTO users.users (id, email, firstname, lastname, age, country) VALUES(?,?,?,?,?,?)";
+            "INSERT INTO users (id, email, firstname, lastname, age, country) VALUES(?,?,?,?,?,?)";
         var preparedStmt = await _session.PrepareAsync(cqlQuery);
         return preparedStmt.Bind(user.Id, user.Email, user.FirstName, user.LastName, user.Age, user.Country);
     }

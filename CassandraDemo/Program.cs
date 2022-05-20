@@ -10,8 +10,7 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-await RegisterCassandraAndCreateUsersTable(builder.Services);
-
+await RegisterCassandraAndCreateTables(builder.Services);
 builder.Services.AddSingleton<UsersRepository>();
 
 var app = builder.Build();
@@ -31,20 +30,20 @@ app.MapControllers();
 
 app.Run();
 
-static async Task RegisterCassandraAndCreateUsersTable(IServiceCollection serviceCollection)
+static async Task RegisterCassandraAndCreateTables(IServiceCollection serviceCollection)
 {
     var cluster = Cluster.Builder()
         .AddContactPoint("127.0.0.1")
         .WithPort(9042)
         .Build();
 
-    using var defaultSession = await cluster.ConnectAsync();
+    var defaultSession = await cluster.ConnectAsync();
     await defaultSession.ExecuteAsync(new SimpleStatement(
-        "CREATE KEYSPACE IF NOT EXISTS users WITH REPLICATION = { 'class' : 'SimpleStrategy', 'replication_factor' : '1' };"));
-    var usersSession = defaultSession.Cluster.Connect("users");
+        "CREATE KEYSPACE IF NOT EXISTS exams WITH REPLICATION = { 'class' : 'SimpleStrategy', 'replication_factor' : '1' };"));
 
-    usersSession.Execute(
-        "CREATE TABLE IF NOT EXISTS users.users (id uuid PRIMARY KEY,email text,firstname text,lastname text,age int,country text)");
+    var examsSession = await defaultSession.Cluster.ConnectAsync("exams");
+    await examsSession.ExecuteAsync(new SimpleStatement(
+        "CREATE TABLE IF NOT EXISTS exams.users (id uuid PRIMARY KEY,email text,firstname text,lastname text,age int,country text)"));
 
-    serviceCollection.AddSingleton(usersSession);
+    serviceCollection.AddSingleton(examsSession);
 }
