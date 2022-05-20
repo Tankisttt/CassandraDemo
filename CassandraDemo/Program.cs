@@ -3,15 +3,12 @@ using CassandraDemo.Repositories;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
-
 builder.Services.AddControllers();
-// Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
 await RegisterCassandraAndCreateTables(builder.Services);
-builder.Services.AddSingleton<UsersRepository>();
+RegisterRepositories(builder.Services);
 
 var app = builder.Build();
 
@@ -45,5 +42,14 @@ static async Task RegisterCassandraAndCreateTables(IServiceCollection serviceCol
     await examsSession.ExecuteAsync(new SimpleStatement(
         "CREATE TABLE IF NOT EXISTS exams.users (id uuid PRIMARY KEY,email text,firstname text,lastname text,age int,country text)"));
 
+    await examsSession.ExecuteAsync(new SimpleStatement(
+        "CREATE TABLE IF NOT EXISTS exams.results (user_id uuid, primary_score int, exam_score int, school_number int, class_number varchar, id uuid ,PRIMARY KEY((school_number, class_number), id))"));
+    
     serviceCollection.AddSingleton(examsSession);
+}
+
+static void RegisterRepositories(IServiceCollection services)
+{
+    services.AddSingleton<UsersRepository>();
+    services.AddSingleton<ResultsRepository>();
 }
