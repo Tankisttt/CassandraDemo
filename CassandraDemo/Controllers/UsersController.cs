@@ -1,15 +1,16 @@
 using Microsoft.AspNetCore.Mvc;
 using AutoFixture;
+using CassandraDemo.Repositories;
 
 namespace CassandraDemo.Controllers;
 
 [ApiController]
 [Route("[controller]")]
-public class CassandraDemoController : ControllerBase
+public class UsersController : ControllerBase
 {
     private readonly UsersRepository _usersRepository;
 
-    public CassandraDemoController(UsersRepository usersRepository)
+    public UsersController(UsersRepository usersRepository)
     {
         _usersRepository = usersRepository;
     }

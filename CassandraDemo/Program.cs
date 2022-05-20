@@ -1,5 +1,5 @@
 using Cassandra;
-using CassandraDemo;
+using CassandraDemo.Repositories;
 
 var builder = WebApplication.CreateBuilder(args);
 

@@ -1,7 +1,7 @@
 ﻿using Cassandra;
 using ISession = Cassandra.ISession;
 
-namespace CassandraDemo;
+namespace CassandraDemo.Repositories;
 
 public class UsersRepository
 {
