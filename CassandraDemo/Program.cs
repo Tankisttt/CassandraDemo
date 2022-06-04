@@ -45,6 +45,9 @@ static async Task RegisterCassandraAndCreateTables(IServiceCollection serviceCol
     await examsSession.ExecuteAsync(new SimpleStatement(
         "CREATE TABLE IF NOT EXISTS exams.results (user_id uuid, primary_score int, exam_score int, school_number int, class_number varchar, id uuid ,PRIMARY KEY((school_number, class_number), id))"));
     
+    await examsSession.ExecuteAsync(new SimpleStatement(
+        "CREATE TABLE IF NOT EXISTS exams.variant_plans (task_number int, requirements text, max_score int, difficulty varchar, requirement_codes varchar, requirement_content_codes text, exam_year int, PRIMARY KEY ((exam_year), task_number))"));
+    
     serviceCollection.AddSingleton(examsSession);
 }
 
@@ -52,4 +55,5 @@ static void RegisterRepositories(IServiceCollection services)
 {
     services.AddSingleton<UsersRepository>();
     services.AddSingleton<ResultsRepository>();
+    services.AddSingleton<VariantsPlanRepository>();
 }
